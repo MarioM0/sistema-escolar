@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "123",
+    "database": "sge_dev",
+    "host": "postgres",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "admin",
+    "password": "123",
+    "database": "sge_test",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "admin",
+    "password": "123",
+    "database": "sge_prod",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres"
+  }
+}
