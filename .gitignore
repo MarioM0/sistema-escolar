@@ -1,0 +1,12 @@
+node_modules/
+.env
+postgres_data/
+.env.local
+npm-debug.log
+dist/
+
+# VSCode
+.vscode/
+
+# Docker
+docker-compose.override.yml
