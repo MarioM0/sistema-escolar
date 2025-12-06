@@ -1,18 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const  routes = require('./routes');
-
+const express = require("express");
 const app = express();
+const authRoutes = require("./routes/auth");
 
-app.use(cors());
-app.use(express.json());
+app.use(express.json()); // para poder leer JSON en body
 
-//Rutas
-
-app.get('/', (req, res) => {
-    res.send('API funcionando correctamente 🚀');
-});
-
-// Manejo de errores
+// Todas las rutas de auth bajo /api
+app.use("/api", authRoutes);
 
 module.exports = app;

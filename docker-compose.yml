@@ -1,6 +1,16 @@
 version: "3.9"
 
 services:
+  frontend:
+    build: ./frontend
+    container_name: frontend_sge
+    ports:
+      - "5173:80"   # ngnix sirve en el puerto 80 dentro del contenedor
+    depends_on:
+      - backend
+    networks:
+      - sge_net
+
   backend:
     build: ./backend
     container_name: backend_sge
@@ -36,4 +46,3 @@ networks:
 
 volumes:
   postgres_data:
-
