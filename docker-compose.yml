@@ -5,7 +5,9 @@ services:
     build: ./frontend
     container_name: frontend_sge
     ports:
-      - "5173:80"   # ngnix sirve en el puerto 80 dentro del contenedor
+      - "5173:80"
+    environment:
+      VITE_API_URL: http://backend:3000/api
     depends_on:
       - backend
     networks:

@@ -9,9 +9,10 @@ async function start(){
         await sequelize.authenticate();
         console.log('DB conectada correctamente');
 
-        app.listen(PORT, () =>{
-            console.log(`Servidor corriendo en puerto ${PORT}`);
+        app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Servidor corriendo en puerto ${PORT}`);
         });
+
     } catch (error){
         console.error('Error al conectar la DB', error);
     }

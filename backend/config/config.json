@@ -1,11 +1,11 @@
 {
   "development": {
-    "username": "postgres",
-    "password": "123",
-    "database": "sge_dev",
-    "host": "postgres",
-    "port": 5432,
-    "dialect": "postgres"
+  "username": "postgres",
+  "password": "123",
+  "database": "sge_dev",
+  "host": "postgres_sge",  
+  "dialect": "postgres"
+
   },
   "test": {
     "username": "admin",

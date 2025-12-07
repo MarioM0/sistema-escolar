@@ -28,7 +28,8 @@ export default function LoginForm({ onSwitchToRegister, onLogin }: LoginFormProp
     }
 
     try {
-      const response = await api.post("/login", { email, password })
+      const response = await api.post("/login", { email, password });
+
       // backend devuelve { name, email, token }
       const user = response.data
       onLogin(user)

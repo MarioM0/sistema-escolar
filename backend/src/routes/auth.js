@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { Usuarios } = require('../models'); // tu modelo Usuarios
+const { Usuario } = require('../../models'); // coincide con el nombre del modelo
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+// POST /login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  
+
   try {
-    const user = await Usuarios.findOne({ where: { email } });
+    const user = await Usuario.findOne({ where: { email } });
     if (!user) return res.status(401).json({ message: 'Usuario no encontrado' });
 
     const match = await bcrypt.compare(password, user.password_hash);
@@ -20,9 +21,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.json({ token, name: user.nombre, email: user.email, rol: user.rol });
+    res.json({
+      token,
+      name: user.nombre,
+      email: user.email,
+      rol: user.rol
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error });
+    console.error(error);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 });
 
