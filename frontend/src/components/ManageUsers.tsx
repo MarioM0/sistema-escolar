@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowLeft, Plus, Trash2, Eye, Copy, Check, X } from "lucide-react"
 import api from "../axios"
 
@@ -10,6 +10,7 @@ interface ManageUsersProps {
   onViewTeacher?: (teacherId: string) => void
   onViewAdmin?: (adminId: string) => void
   onUserAdded?: () => void
+  initialTab?: "add" | "requests"
 }
 
 interface UserRequest {
@@ -43,8 +44,8 @@ const generateRandomPassword = () => Math.random().toString(36).slice(-8).toUppe
 const generateStudentMatricula = () => `ALU${Math.floor(Math.random() * 9000 + 1000)}`
 const generateTeacherMatricula = () => `MTR${Math.floor(Math.random() * 900 + 100)}`
 
-export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onViewAdmin, onUserAdded }: ManageUsersProps) {
-  const [tab, setTab] = useState<"add" | "requests">("add")
+export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onViewAdmin, onUserAdded, initialTab }: ManageUsersProps) {
+  const [tab, setTab] = useState<"add" | "requests">(initialTab || "add")
   const [selectedRole, setSelectedRole] = useState<"estudiante" | "maestro" | "admin" | null>(null)
   const [formData, setFormData] = useState({ nombre: "", email: "", password: "", grupo: "", matricula: "" })
   const [users, setUsers] = useState<User[]>([])
@@ -52,6 +53,29 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
   const [requests, setRequests] = useState<UserRequest[]>([])
   const [approvingRequest, setApprovingRequest] = useState<UserRequest | null>(null)
   const [copiedPassword, setCopiedPassword] = useState<string | null>(null)
+
+  // Fetch requests when tab changes to requests
+  useEffect(() => {
+    if (tab === "requests") {
+      fetchRequests();
+    }
+  }, [tab]);
+
+  const fetchRequests = async () => {
+    try {
+      const response = await api.get("/solicitudes-registro-maestro");
+      const fetchedRequests = response.data.map((solicitud: any) => ({
+        id: solicitud.id.toString(),
+        name: solicitud.nombre,
+        email: solicitud.email,
+        role: "maestro" as const,
+        dateRequested: new Date(solicitud.fecha_solicitud).toLocaleDateString(),
+      }));
+      setRequests(fetchedRequests);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    }
+  };
 
   const handleRoleSelect = (role: "estudiante" | "maestro" | "admin") => {
     setSelectedRole(role)
@@ -142,48 +166,20 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
     setApprovingRequest(request)
     setSelectedRole(request.role === "maestro" ? "maestro" : "admin")
     const matricula = request.role === "maestro" ? generateTeacherMatricula() : ""
-    setFormData({ nombre: request.name, email: request.email, password: request.password || "", grupo: "", matricula })
+    setFormData({ nombre: request.name, email: request.email, password: request.password || generateRandomPassword(), grupo: "", matricula })
   }
 
   const handleCompleteApproval = async () => {
     if (!selectedRole || !approvingRequest || !formData.nombre || !formData.email) return
 
     try {
-      if (selectedRole === "maestro") {
-        // Add maestro to usuarios table
-        const response = await api.post("/usuarios", {
-          nombre: formData.nombre,
-          email: formData.email,
-          password: formData.password,
-          rol: "MAESTRO",
-          matricula: formData.matricula,
-        })
-        const newUser: User = {
-          id: response.data.id.toString(),
-          nombre: response.data.nombre,
-          email: response.data.email,
-          role: "maestro",
-          matricula: response.data.matricula,
-          password: formData.password,
-        }
-        setUsers([...users, newUser])
-      } else if (selectedRole === "admin") {
-        // Add administrador (control escolar) to usuarios table
-        const response = await api.post("/usuarios", {
-          nombre: formData.nombre,
-          email: formData.email,
-          password: formData.password,
-          rol: "CONTROL_ESCOLAR",
-        })
-        const newUser: User = {
-          id: response.data.id.toString(),
-          nombre: response.data.nombre,
-          email: response.data.email,
-          role: "admin",
-          password: formData.password,
-        }
-        setUsers([...users, newUser])
-      }
+      // Call the approve endpoint with form data
+      await api.put(`/solicitudes-registro-maestro/${approvingRequest.id}/aprobar`, {
+        nombre: formData.nombre,
+        email: formData.email,
+        password: formData.password,
+        matricula: formData.matricula,
+      })
 
       setRequests(requests.filter(r => r.id !== approvingRequest.id))
       setApprovingRequest(null)
@@ -193,6 +189,18 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
     } catch (error) {
       console.error("Error approving request:", error)
       alert("Error al aprobar la solicitud")
+    }
+  }
+
+  const handleRejectRequest = async (request: UserRequest) => {
+    try {
+      await api.put(`/solicitudes-registro-maestro/${request.id}/rechazar`, {
+        respuesta: 'Solicitud rechazada'
+      });
+      setRequests(requests.filter(r => r.id !== request.id))
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      alert("Error al rechazar la solicitud")
     }
   }
 
@@ -401,7 +409,7 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
                     <Check size={18} />
                   </button>
                   <button
-                    onClick={() => setRequests(requests.filter(r => r.id !== request.id))}
+                    onClick={() => handleRejectRequest(request)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                     title="Rechazar solicitud"
                   >
