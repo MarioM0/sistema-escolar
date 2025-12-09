@@ -51,8 +51,14 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
   const [users, setUsers] = useState<User[]>([])
   const [alumnos, setAlumnos] = useState<Alumno[]>([])
   const [requests, setRequests] = useState<UserRequest[]>([])
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0)
   const [approvingRequest, setApprovingRequest] = useState<UserRequest | null>(null)
   const [copiedPassword, setCopiedPassword] = useState<string | null>(null)
+
+  // Fetch pending requests count on component mount
+  useEffect(() => {
+    fetchPendingRequestsCount();
+  }, []);
 
   // Fetch requests when tab changes to requests
   useEffect(() => {
@@ -74,6 +80,15 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
       setRequests(fetchedRequests);
     } catch (error) {
       console.error("Error fetching requests:", error);
+    }
+  };
+
+  const fetchPendingRequestsCount = async () => {
+    try {
+      const response = await api.get("/solicitudes-registro-maestro/count");
+      setPendingRequestsCount(response.data.count);
+    } catch (error) {
+      console.error("Error fetching pending requests count:", error);
     }
   };
 
@@ -232,7 +247,7 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
           onClick={() => setTab("requests")}
           className={`px-4 py-3 font-semibold border-b-2 transition ${tab === "requests" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-600 hover:text-gray-900"}`}
         >
-          Solicitudes Pendientes ({requests.length})
+          Solicitudes Pendientes ({pendingRequestsCount})
         </button>
       </div>
 

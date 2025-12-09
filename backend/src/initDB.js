@@ -74,6 +74,20 @@ export async function createTables() {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+
+      -- 5️⃣ Tabla solicitudes_registro_maestro
+      CREATE TABLE IF NOT EXISTS solicitudes_registro_maestro (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        email VARCHAR(150) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobada', 'rechazada')),
+        fecha_solicitud TIMESTAMP DEFAULT NOW(),
+        fecha_respuesta TIMESTAMP,
+        respuesta TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
     `);
 
     // Agregar columnas faltantes si no existen

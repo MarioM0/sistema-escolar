@@ -17,6 +17,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /solicitudes-registro-maestro/count - Contar solicitudes pendientes
+router.get('/count', async (req, res) => {
+  try {
+    const count = await SolicitudRegistroMaestro.count({
+      where: { estado: 'pendiente' }
+    });
+    res.json({ count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al obtener el conteo de solicitudes pendientes' });
+  }
+});
+
 // POST nueva solicitud de registro de maestro
 router.post('/', async (req, res) => {
   try {

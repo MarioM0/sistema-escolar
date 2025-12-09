@@ -19,9 +19,10 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentView, setCurrentView] = useState<"home" | "users" | "reports" | "courses">("home");
+  const [currentView, setCurrentView] = useState<"home" | "users" | "reports" | "courses" | "requests">("home");
   const [alumnosCount, setAlumnosCount] = useState(0);
   const [maestrosCount, setMaestrosCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   // Función para actualizar conteo de alumnos
   const fetchAlumnosCount = async () => {
@@ -43,10 +44,21 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }
   };
 
+  // Función para actualizar conteo de solicitudes pendientes
+  const fetchPendingRequestsCount = async () => {
+    try {
+      const response = await api.get("/solicitudes-registro-maestro/count");
+      setPendingRequestsCount(response.data.count);
+    } catch (error) {
+      console.error("Error al obtener el conteo de solicitudes pendientes:", error);
+    }
+  };
+
   useEffect(() => {
     if (currentView === "home") {
       fetchAlumnosCount();
       fetchMaestrosCount();
+      fetchPendingRequestsCount();
     }
   }, [currentView]);
 
@@ -124,18 +136,24 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   <h3 className="text-sm font-medium text-muted-foreground">Pendientes</h3>
                   <Settings className="w-5 h-5 text-purple-600" />
                 </div>
-                <p className="text-3xl font-bold text-foreground">3</p>
+                <p className="text-3xl font-bold text-foreground">{pendingRequestsCount}</p>
                 <p className="text-xs text-muted-foreground mt-2">Solicitudes nuevas</p>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <button
                 onClick={() => setCurrentView("users")}
                 className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 rounded-2xl transition shadow-lg hover:shadow-xl"
               >
                 Nuevo Usuario
+              </button>
+              <button
+                onClick={() => setCurrentView("requests")}
+                className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 rounded-2xl transition shadow-lg hover:shadow-xl"
+              >
+                Solicitudes
               </button>
               <button
                 onClick={() => setCurrentView("reports")}
@@ -157,6 +175,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         {currentView === "users" && (
           <ManageUsers
             onBack={() => setCurrentView("home")}
+            onUserAdded={() => {
+              fetchAlumnosCount();
+              fetchMaestrosCount();
+            }}
+          />
+        )}
+        {currentView === "requests" && (
+          <ManageUsers
+            onBack={() => setCurrentView("home")}
+            initialTab="requests"
             onUserAdded={() => {
               fetchAlumnosCount();
               fetchMaestrosCount();

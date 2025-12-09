@@ -24,6 +24,7 @@ import { Materia } from "./Materia.js";
 import { MateriaMaestro } from "./MateriaMaestro.js";
 import { Calificacion } from "./Calificacion.js";
 import { Solicitud } from "./Solicitud.js";
+import { SolicitudRegistroMaestro } from "./SolicitudRegistroMaestro.js";
 
 // Definir asociaciones
 Usuario.hasMany(Alumno, { foreignKey: 'usuario_id', as: 'alumnos' });
@@ -60,4 +61,4 @@ Calificacion.belongsTo(Materia, { foreignKey: 'materia_id', as: 'materia' });
 Materia.hasMany(Calificacion, { foreignKey: 'materia_id', as: 'calificaciones' });
 
 // Exportar modelos
-export { Usuario, Alumno, Maestro, ControlEscolar, Materia, MateriaMaestro, Calificacion, Solicitud };
+export { Usuario, Alumno, Maestro, ControlEscolar, Materia, MateriaMaestro, Calificacion, Solicitud, SolicitudRegistroMaestro };

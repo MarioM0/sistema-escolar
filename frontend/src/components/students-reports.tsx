@@ -22,6 +22,7 @@ export default function StudentReports({ onBack }: StudentReportsProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGrupo, setFilterGrupo] = useState("")
   const [students, setStudents] = useState<Student[]>([])
+  const [uniqueGroups, setUniqueGroups] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,7 +32,13 @@ export default function StudentReports({ onBack }: StudentReportsProps) {
       try {
         setLoading(true)
         const response = await api.get("/alumnos")
-        setStudents(response.data)
+        const studentsData = response.data
+        setStudents(studentsData)
+
+        // Extract unique groups
+        const groups = [...new Set(studentsData.map((student: Student) => student.grupo).filter(Boolean))].sort() as string[]
+        setUniqueGroups(groups)
+
         setError(null)
       } catch (err) {
         console.error("Error fetching students:", err)
@@ -132,9 +139,11 @@ export default function StudentReports({ onBack }: StudentReportsProps) {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           >
             <option value="">Todos los grupos</option>
-            <option value="A">Grupo A</option>
-            <option value="B">Grupo B</option>
-            <option value="C">Grupo C</option>
+            {uniqueGroups.map((group) => (
+              <option key={group} value={group}>
+                {group}
+              </option>
+            ))}
           </select>
           <button
             onClick={() => {

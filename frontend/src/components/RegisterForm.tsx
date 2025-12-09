@@ -4,13 +4,13 @@ import type React from "react"
 
 import { useState } from "react"
 import { Eye, EyeOff, BookOpen } from "lucide-react"
+import api from "../axios"
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void
-  onRegister: (user: { name: string; email: string }) => void
 }
 
-export default function RegisterForm({ onSwitchToLogin, onRegister }: RegisterFormProps) {
+export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -54,9 +54,25 @@ export default function RegisterForm({ onSwitchToLogin, onRegister }: RegisterFo
     setErrors({})
 
     // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      await api.post('/solicitudes-registro-maestro', {
+        nombre: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
 
-    onRegister({ name: formData.fullName, email: formData.email })
+      alert('Solicitud de registro enviada exitosamente. Espera la aprobación del control escolar.');
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (error: any) {
+      console.error('Error:', error);
+      setErrors({ general: error.response?.data?.message || 'Error al enviar la solicitud' });
+    }
+
     setLoading(false)
   }
 
