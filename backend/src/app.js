@@ -1,17 +1,39 @@
-const express = require("express");
-const cors = require("cors");       // <--- importar CORS
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/auth.js';
+import alumnosRoutes from './routes/alumnos.js';
+import usuariosRoutes from './routes/usuarios.js';
+import solicitudesRoutes from './routes/solicitudes.js';
+import calificacionesRoutes from './routes/calificaciones.js';
+import maestrosRoutes from './routes/maestros.js';
+import controlEscolarRoutes from './routes/control_escolar.js';
+import materiasRoutes from './routes/materias.js';
+
 const app = express();
-const authRoutes = require("./routes/auth");
 
-app.use(express.json()); // para poder leer JSON en body
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Habilitar CORS para tu frontend
+// CORS
 app.use(cors({
-  origin: "http://localhost:5173",  // la URL donde corre tu frontend
+  origin: ['http://localhost:5173', 'http://frontend_sge:5173'],
   credentials: true
 }));
 
-// Todas las rutas de auth bajo /api
-app.use("/api", authRoutes);
+// Rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/alumnos', alumnosRoutes);
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/solicitudes', solicitudesRoutes);
+app.use('/api/calificaciones', calificacionesRoutes);
+app.use('/api/maestros', maestrosRoutes);
+app.use('/api/control_escolar', controlEscolarRoutes);
+app.use('/api/materias', materiasRoutes);
 
-module.exports = app;
+// Test
+app.get('/', (req, res) => res.send('Backend corriendo correctamente'));
+
+export default app;

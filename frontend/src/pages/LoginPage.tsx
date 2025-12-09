@@ -1,38 +1,41 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "../context/auth-context"
 import LoginForm from "../components/LoginForm"
 import RegisterForm from "../components/RegisterForm"
 import Dashboard from "../components/Dashboard"
+// import TeacherDashboard from "../components/teacher-dashboard"
 
 export default function LoginPage() {
-  const [authState, setAuthState] = useState<"login" | "register" | "dashboard">("login")
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+  const { user } = useAuth()
+  const [authState, setAuthState] = useState<"login" | "register">("login")
 
-  const handleSwitchToRegister = () => setAuthState("register")
-  const handleSwitchToLogin = () => setAuthState("login")
-  const handleLogin = (userData: { name: string; email: string }) => {
-    setUser(userData)
-    setAuthState("dashboard")
-  }
-  const handleRegister = (userData: { name: string; email: string }) => {
-    setUser(userData)
-    setAuthState("dashboard")
-  }
-  const handleLogout = () => {
-    setUser(null)
-    setAuthState("login")
+  const isAuthenticated = !!user // derivado de user
+
+  // Si ya está autenticado
+  if (isAuthenticated && user) {
+    if (user.rol === "CONTROL_ESCOLAR") {
+      return <Dashboard user={{ ...user, token: "" }} />
+    }
+
+    if (user.rol === "MAESTRO") {
+      // return <TeacherDashboard user={{ ...user, token: "" }} />
+    }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <main className="min-h-screen bg-white">
       {authState === "login" && (
-        <LoginForm onSwitchToRegister={handleSwitchToRegister} onLogin={handleLogin} />
+        <LoginForm onSwitchToRegister={() => setAuthState("register")} />
       )}
+
       {authState === "register" && (
-        <RegisterForm onSwitchToLogin={handleSwitchToLogin} onRegister={handleRegister} />
+        <RegisterForm
+          onSwitchToLogin={() => setAuthState("login")}
+          onRegister={() => {}}
+        />
       )}
-      {authState === "dashboard" && user && <Dashboard user={user} onLogout={handleLogout} />}
     </main>
   )
 }

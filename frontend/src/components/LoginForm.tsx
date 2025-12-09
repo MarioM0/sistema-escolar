@@ -2,14 +2,14 @@
 
 import { useState } from "react"
 import { Eye, EyeOff, BookOpen } from "lucide-react"
-import api from "../axios" // ruta correcta a tu axios.ts
+import { useAuth } from "../context/auth-context"
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
-  onLogin: (user: { name: string; email: string; token: string }) => void
 }
 
-export default function LoginForm({ onSwitchToRegister, onLogin }: LoginFormProps) {
+export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
+  const { login } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -28,13 +28,15 @@ export default function LoginForm({ onSwitchToRegister, onLogin }: LoginFormProp
     }
 
     try {
-      const response = await api.post("/login", { email, password });
+      // 🔥 Solo llamamos al login del AuthContext
+      const result = await login(email, password)
 
-      // backend devuelve { name, email, token }
-      const user = response.data
-      onLogin(user)
+      if (!result.success) {
+        setError(result.error || "Error al iniciar sesión")
+      }
+
     } catch (err: any) {
-      setError(err.response?.data?.message || "Error al iniciar sesión")
+      setError("Error al conectar con el servidor")
     } finally {
       setLoading(false)
     }
@@ -43,6 +45,7 @@ export default function LoginForm({ onSwitchToRegister, onLogin }: LoginFormProp
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -54,42 +57,37 @@ export default function LoginForm({ onSwitchToRegister, onLogin }: LoginFormProp
           <p className="text-muted-foreground">Bienvenido de vuelta</p>
         </div>
 
-        {/* Form Card */}
+        {/* Card */}
         <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                Correo Electrónico
-              </label>
+              <label className="block text-sm font-medium mb-2">Correo Electrónico</label>
               <input
-                id="email"
                 type="email"
+                className="w-full px-4 py-3 rounded-lg border bg-background"
+                placeholder="correo@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="correo@ejemplo.com"
-                className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-                Contraseña
-              </label>
+              <label className="block text-sm font-medium mb-2">Contraseña</label>
               <div className="relative">
                 <input
-                  id="password"
                   type={showPassword ? "text" : "password"}
+                  className="w-full px-4 py-3 rounded-lg border bg-background"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -97,35 +95,39 @@ export default function LoginForm({ onSwitchToRegister, onLogin }: LoginFormProp
             </div>
 
             {/* Error */}
-            {error && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 p-3 rounded-lg">{error}</div>}
+            {error && (
+              <p className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                {error}
+              </p>
+            )}
 
-            {/* Submit */}
+            {/* Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold"
             >
               {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </button>
           </form>
 
-          {/* Switch */}
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          {/* Register link */}
+          <p className="text-center text-sm mt-6">
             ¿No tienes cuenta?{" "}
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="text-blue-600 hover:text-blue-700 font-semibold transition"
+              className="text-blue-600 font-semibold"
             >
               Regístrate aquí
             </button>
           </p>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-6">
           © 2025 Control Escolar. Todos los derechos reservados.
         </p>
+
       </div>
     </div>
   )

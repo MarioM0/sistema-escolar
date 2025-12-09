@@ -1,9 +1,12 @@
+// frontend/src/axios.ts
 import axios from "axios";
 
-const baseURL = window.location.hostname === "localhost"
-  ? "http://localhost:3000/api" // desde el navegador
-  : "http://backend:3000/api";   // desde contenedor frontend
-
-const api = axios.create({ baseURL });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://backend:3000/api", // Soporta Docker y dev local
+  withCredentials: true, // si usas cookies para auth
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 export default api;

@@ -1,60 +1,43 @@
-const bcrypt = require('bcrypt');
-const { Pool } = require('pg');
+import bcrypt from 'bcrypt';
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const pool = new Pool({
-  user: 'postgres',
-  host: 'postgres_sge', // nombre del contenedor Postgres
-  database: 'sge_dev',
-  password: '123',       // tu contraseña real
-  port: 5432
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: Number(process.env.DB_PORT),
 });
 
-async function seed() {
+async function seedUsers() {
   try {
-    // Verificar usuarios existentes
-    const existing = await pool.query('SELECT * FROM usuarios');
-    console.log(`Usuarios existentes antes del seed: ${existing.rows.length}`);
-    console.table(existing.rows);
-
     const saltRounds = 10;
 
-    // Contraseñas hasheadas
     const users = [
       { nombre: 'Admin', email: 'admin@colegio.com', password: 'admin123', rol: 'CONTROL_ESCOLAR' },
-      { nombre: 'Profesor Juan', email: 'juan@colegio.com', password: 'prof1234', rol: 'MAESTRO', matricula: 'MTR123' },
-      { nombre: 'Profesor Ana', email: 'ana@colegio.com', password: 'prof5678', rol: 'MAESTRO', matricula: 'MTR124' },
-      { nombre: 'Alumno Pedro', email: 'pedro@colegio.com', password: 'alumno123', rol: 'ALUMNO', matricula: 'ALU456', grupo: '5A' },
-      { nombre: 'Alumno María', email: 'maria@colegio.com', password: 'alumno456', rol: 'ALUMNO', matricula: 'ALU457', grupo: '5A' }
+      { nombre: 'Profesor Juan', email: 'juan@colegio.com', password: 'prof123', rol: 'MAESTRO', matricula: 'MTR123' },
+      { nombre: 'Profesor Ana', email: 'ana@colegio.com', password: 'prof456', rol: 'MAESTRO', matricula: 'MTR124' },
     ];
 
-    for (const user of users) {
-      const password_hash = await bcrypt.hash(user.password, saltRounds);
-      const query = `
-        INSERT INTO usuarios (nombre, email, password_hash, rol, matricula, grupo)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (email) DO NOTHING
-        RETURNING *;
-      `;
-      const values = [user.nombre, user.email, password_hash, user.rol, user.matricula || null, user.grupo || null];
-      const res = await pool.query(query, values);
-
-      if (res.rows.length > 0) {
-        console.log(`Usuario insertado:`, res.rows[0]);
-      } else {
-        console.log(`Usuario ya existe y no se insertó: ${user.email}`);
-      }
+    for (const u of users) {
+      const password_hash = await bcrypt.hash(u.password, saltRounds);
+      await pool.query(
+        `INSERT INTO usuarios (nombre, email, password_hash, rol, matricula)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (email) DO NOTHING`,
+        [u.nombre, u.email, password_hash, u.rol, u.matricula || null]
+      );
+      console.log(`Usuario insertado: ${u.email}`);
     }
 
-    // Verificar usuarios después del seed
-    const final = await pool.query('SELECT * FROM usuarios');
-    console.log(`Usuarios existentes después del seed: ${final.rows.length}`);
-    console.table(final.rows);
-
+    console.log('Seed de usuarios completado ✅');
   } catch (err) {
-    console.error('Error durante el seed:', err.stack);
+    console.error('Error seed usuarios:', err);
   } finally {
     await pool.end();
   }
 }
 
-seed();
+export default seedUsers;
