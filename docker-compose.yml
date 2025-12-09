@@ -18,6 +18,8 @@ services:
       - "3000:3000"
     env_file:
       - ./backend/.env
+    environment:
+      RUN_SEEDERS: "true"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -36,6 +38,8 @@ services:
       POSTGRES_DB: sge_dev
     ports:
       - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - sge_net
 

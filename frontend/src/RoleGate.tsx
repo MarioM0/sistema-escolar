@@ -1,7 +1,7 @@
 import { useAuth } from "./context/auth-context"
 import LoginPage from "./pages/LoginPage"
 import Dashboard from "./components/Dashboard"
-// import TeacherDashboard from "./components/TeacherDashboard"
+import TeacherDashboard from "./components/teacher_dashboard"
 
 export default function RoleGate() {
   const { user, logout } = useAuth()
@@ -15,8 +15,7 @@ export default function RoleGate() {
       return <Dashboard user={user} onLogout={logout} />
 
     case "MAESTRO":
-      // Si quieres habilitar dashboard de maestro, descomenta:
-      // return <TeacherDashboard user={user} onLogout={logout} />
+      return <TeacherDashboard user={user} onLogout={logout} />
 
     default:
       return (

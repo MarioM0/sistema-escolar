@@ -95,7 +95,7 @@ export async function createTables() {
       await pool.query(`ALTER TABLE alumnos ADD COLUMN IF NOT EXISTS usuario_id INT REFERENCES usuarios(id);`);
       await pool.query(`ALTER TABLE solicitudes ADD COLUMN IF NOT EXISTS usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE;`);
       await pool.query(`ALTER TABLE materias ADD COLUMN IF NOT EXISTS maestro_id INT REFERENCES usuarios(id);`);
-      console.log('✅ Columnas agregadas correctamente');
+
     } catch (alterErr) {
       console.log('⚠️  Algunas columnas ya existen o error al agregar:', alterErr.message);
     }
