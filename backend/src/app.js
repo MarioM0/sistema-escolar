@@ -35,6 +35,11 @@ app.use('/api/maestros', maestrosRoutes);
 app.use('/api/control_escolar', controlEscolarRoutes);
 app.use('/api/materias', materiasRoutes);
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Test
 app.get('/', (req, res) => res.send('Backend corriendo correctamente'));
 

@@ -14,9 +14,9 @@ const pool = new Pool({
 async function seedAlumnos() {
   try {
     const alumnos = [
-      { nombre: 'Pedro', email: 'pedro@colegio.com', matricula: 'ALU001', grupo: '5A', fecha_nacimiento: '2010-05-12' },
-      { nombre: 'María', email: 'maria@colegio.com', matricula: 'ALU002', grupo: '5A', fecha_nacimiento: '2010-07-20' },
-      { nombre: 'Luis', email: 'luis@colegio.com', matricula: 'ALU003', grupo: '5B', fecha_nacimiento: '2010-03-18' },
+      { nombre: 'Pedro', email: 'pedro@colegio.com', matricula: 'ALU001', grupo: '1A', fecha_nacimiento: '2010-05-12' },
+      { nombre: 'María', email: 'maria@colegio.com', matricula: 'ALU002', grupo: '1A', fecha_nacimiento: '2010-07-20' },
+      { nombre: 'Luis', email: 'luis@colegio.com', matricula: 'ALU003', grupo: '1B', fecha_nacimiento: '2010-03-18' },
     ];
 
     for (const a of alumnos) {

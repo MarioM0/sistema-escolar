@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { LogOut, BookOpen, Users, BarChart3 } from "lucide-react"
 import { useAuth } from "../context/auth-context"
-import TeacherMyGroups from "./teacher.my-groups"
+import TeacherMyGroups from "./teacher-my-groups"
 import TeacherGradeManagement from "./teacher-grade-management.tsx"
 
 interface TeacherDashboardProps {

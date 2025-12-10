@@ -184,38 +184,116 @@ export default function ManageUsers({ onBack, onViewStudent, onViewTeacher, onVi
     setFormData({ nombre: request.name, email: request.email, password: request.password || generateRandomPassword(), grupo: "", matricula })
   }
 
+
   const handleCompleteApproval = async () => {
     if (!selectedRole || !approvingRequest || !formData.nombre || !formData.email) return
 
     try {
+      console.log("Iniciando aprobación de solicitud:", approvingRequest.id)
+      
       // Call the approve endpoint with form data
-      await api.put(`/solicitudes-registro-maestro/${approvingRequest.id}/aprobar`, {
+      const response = await api.put(`/solicitudes-registro-maestro/${approvingRequest.id}/aprobar`, {
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
         matricula: formData.matricula,
       })
 
-      setRequests(requests.filter(r => r.id !== approvingRequest.id))
+      console.log("Solicitud aprobada exitosamente:", response.data)
+      
+      // Actualizar el estado de manera optimista sin afectar la sesión
+      setRequests(prevRequests => prevRequests.filter(r => r.id !== approvingRequest.id))
       setApprovingRequest(null)
       setFormData({ nombre: "", email: "", password: "", grupo: "", matricula: "" })
       setSelectedRole(null)
-      if (onUserAdded) onUserAdded()
-    } catch (error) {
+      
+      // Mostrar mensaje de éxito
+      alert("¡Solicitud aprobada exitosamente! El maestro ha sido registrado en el sistema.")
+      
+      if (onUserAdded) {
+        console.log("Llamando onUserAdded callback")
+        onUserAdded()
+      }
+      
+    } catch (error: any) {
       console.error("Error approving request:", error)
-      alert("Error al aprobar la solicitud")
+      
+      // Manejar diferentes tipos de errores sin interferir con la sesión
+      let errorMessage = "Error al aprobar la solicitud"
+      
+      if (error.response) {
+        const status = error.response.status
+        const message = error.response.data?.message
+        
+        if (status === 400) {
+          errorMessage = message || "Datos de la solicitud inválidos"
+        } else if (status === 404) {
+          errorMessage = "La solicitud no fue encontrada"
+        } else if (status === 500) {
+          errorMessage = "Error interno del servidor. Intenta nuevamente"
+        } else {
+          errorMessage = `Error del servidor: ${message || 'Error desconocido'}`
+        }
+      } else if (error.request) {
+        errorMessage = "Error de conexión con el servidor"
+      }
+      
+      // Mostrar error pero NO cerrar sesión
+      alert(errorMessage)
+      
+      // NO llamar a logout ni modificar el estado de autenticación
+      // La sesión debe mantenerse activa
     }
   }
 
+
   const handleRejectRequest = async (request: UserRequest) => {
+    // Confirmar antes de rechazar
+    if (!confirm(`¿Estás seguro de que quieres rechazar la solicitud de ${request.name}?`)) {
+      return
+    }
+
     try {
+      console.log("Iniciando rechazo de solicitud:", request.id)
+      
       await api.put(`/solicitudes-registro-maestro/${request.id}/rechazar`, {
         respuesta: 'Solicitud rechazada'
-      });
-      setRequests(requests.filter(r => r.id !== request.id))
-    } catch (error) {
-      console.error("Error rejecting request:", error);
-      alert("Error al rechazar la solicitud")
+      })
+      
+      console.log("Solicitud rechazada exitosamente")
+      
+      // Actualizar el estado de manera optimista sin afectar la sesión
+      setRequests(prevRequests => prevRequests.filter(r => r.id !== request.id))
+      
+      // Mostrar mensaje de éxito
+      alert("Solicitud rechazada exitosamente")
+      
+    } catch (error: any) {
+      console.error("Error rejecting request:", error)
+      
+      // Manejar diferentes tipos de errores sin interferir con la sesión
+      let errorMessage = "Error al rechazar la solicitud"
+      
+      if (error.response) {
+        const status = error.response.status
+        const message = error.response.data?.message
+        
+        if (status === 404) {
+          errorMessage = "La solicitud no fue encontrada"
+        } else if (status === 500) {
+          errorMessage = "Error interno del servidor. Intenta nuevamente"
+        } else {
+          errorMessage = `Error del servidor: ${message || 'Error desconocido'}`
+        }
+      } else if (error.request) {
+        errorMessage = "Error de conexión con el servidor"
+      }
+      
+      // Mostrar error pero NO cerrar sesión
+      alert(errorMessage)
+      
+      // NO llamar a logout ni modificar el estado de autenticación
+      // La sesión debe mantenerse activa
     }
   }
 

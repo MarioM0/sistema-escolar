@@ -1,5 +1,6 @@
+
 import { DataTypes } from "sequelize";
-import { sequelize } from "../db.js";
+import { sequelize } from "./sequelize.js";
 
 export const ControlEscolar = sequelize.define("ControlEscolar", {
   id: {

@@ -1,8 +1,29 @@
+
+
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { SolicitudRegistroMaestro, Usuario } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// POST nueva solicitud de registro de maestro - RUTA PÚBLICA (sin auth)
+router.post('/', async (req, res) => {
+  try {
+    const { nombre, email, password } = req.body;
+    if (!nombre || !email || !password) return res.status(400).json({ message: 'Faltan datos' });
+
+    const password_hash = await bcrypt.hash(password, 10);
+    const nueva = await SolicitudRegistroMaestro.create({ nombre, email, password_hash });
+    res.status(201).json(nueva);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error al crear solicitud de registro de maestro' });
+  }
+});
+
+// Aplicar middleware de autenticación solo a las rutas que lo necesitan
+router.use(authenticateToken);
 
 // GET todas las solicitudes de registro de maestro pendientes
 router.get('/', async (req, res) => {
@@ -28,21 +49,7 @@ router.get('/count', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Error al obtener el conteo de solicitudes pendientes' });
   }
-});
 
-// POST nueva solicitud de registro de maestro
-router.post('/', async (req, res) => {
-  try {
-    const { nombre, email, password } = req.body;
-    if (!nombre || !email || !password) return res.status(400).json({ message: 'Faltan datos' });
-
-    const password_hash = await bcrypt.hash(password, 10);
-    const nueva = await SolicitudRegistroMaestro.create({ nombre, email, password_hash });
-    res.status(201).json(nueva);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error al crear solicitud de registro de maestro' });
-  }
 });
 
 // PUT aprobar solicitud de registro de maestro
@@ -75,7 +82,18 @@ router.put('/:id/aprobar', async (req, res) => {
       respuesta: 'Solicitud aprobada. Usuario creado exitosamente.'
     });
 
-    res.json({ message: 'Solicitud aprobada y usuario creado', usuario: nuevoUsuario });
+    // Respuesta simplificada sin datos sensibles del usuario creado
+    res.json({ 
+      success: true, 
+      message: 'Solicitud aprobada y usuario maestro creado exitosamente',
+      data: {
+        id: nuevoUsuario.id,
+        nombre: nuevoUsuario.nombre,
+        email: nuevoUsuario.email,
+        rol: nuevoUsuario.rol,
+        matricula: nuevoUsuario.matricula
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error al aprobar solicitud' });

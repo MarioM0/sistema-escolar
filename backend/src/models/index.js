@@ -1,19 +1,6 @@
-import { Sequelize } from "sequelize";
-import * as configModule from "../config.js";
-const env = process.env.NODE_ENV || 'development';
-const config = (configModule.default || configModule)[env];
 
-// Crear instancia de Sequelize
-export const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    host: config.host,
-    dialect: config.dialect,
-    logging: false,
-  }
-);
+// Importar instancia de Sequelize
+import { sequelize } from "./sequelize.js";
 
 // Importar modelos
 import { Usuario } from "./Usuario.js";
@@ -36,13 +23,17 @@ Maestro.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });
 Usuario.hasMany(ControlEscolar, { foreignKey: 'usuario_id', as: 'controles_escolares' });
 ControlEscolar.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });
 
-// Asociación many-to-many entre Materia y Usuario (maestros)
+// Asociación many-to-many entre Materia y Usuario (maestros) con grupo
 Materia.belongsToMany(Usuario, { through: MateriaMaestro, foreignKey: 'materia_id', as: 'maestros' });
 Usuario.belongsToMany(Materia, { through: MateriaMaestro, foreignKey: 'usuario_id', as: 'materias' });
 
-// Asociación one-to-one entre Materia y Usuario (maestro principal)
-Materia.belongsTo(Usuario, { foreignKey: 'maestro_id', as: 'maestroPrincipal' });
-Usuario.hasMany(Materia, { foreignKey: 'maestro_id', as: 'materiasPrincipales' });
+// Asociación many-to-many entre MateriaMaestro y Usuario (para grupos específicos)
+MateriaMaestro.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'maestro' });
+Usuario.hasMany(MateriaMaestro, { foreignKey: 'usuario_id', as: 'materiaMaestros' });
+
+// Asociación many-to-many entre MateriaMaestro y Materia
+MateriaMaestro.belongsTo(Materia, { foreignKey: 'materia_id', as: 'materia' });
+Materia.hasMany(MateriaMaestro, { foreignKey: 'materia_id', as: 'materiaMaestros' });
 
 // Asociación one-to-many entre Solicitud y Usuario
 Solicitud.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });

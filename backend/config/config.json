@@ -3,7 +3,8 @@
   "username": "postgres",
   "password": "123",
   "database": "sge_dev",
-  "host": "postgres_sge",  
+  "host": "localhost",
+  "port": 5433,
   "dialect": "postgres"
 
   },

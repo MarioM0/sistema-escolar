@@ -14,7 +14,7 @@ interface Group {
   grade: string
   subject: string
   students: number
-  avgGrade: number
+  avgGrade: number | null
 }
 
 interface Student {
@@ -41,6 +41,7 @@ export default function TeacherMyGroups({ onBack }: TeacherMyGroupsProps) {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/maestros/${authUser.id}/groups`)
         if (response.ok) {
           const data = await response.json()
+          console.log("Groups data received:", data)
           setGroups(data)
         }
       } catch (error) {
@@ -61,7 +62,11 @@ export default function TeacherMyGroups({ onBack }: TeacherMyGroupsProps) {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/maestros/${authUser.id}/groups/${groupId}/students`)
       if (response.ok) {
         const data = await response.json()
-        setGroupStudents(data)
+        const studentsWithNumbers = data.map((student: any) => ({
+          ...student,
+          grade: student.grade !== null ? Number(student.grade) : null
+        }))
+        setGroupStudents(studentsWithNumbers)
       }
     } catch (error) {
       console.error("Error fetching students:", error)
@@ -117,7 +122,7 @@ export default function TeacherMyGroups({ onBack }: TeacherMyGroupsProps) {
               <TrendingUp className="w-5 h-5 text-green-600" />
               <h3 className="text-sm font-medium text-gray-600">Promedio del Grupo</h3>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{selectedGroup.avgGrade.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-gray-900">{selectedGroup.avgGrade !== null && selectedGroup.avgGrade !== undefined ? selectedGroup.avgGrade.toFixed(2) : "N/A"}</p>
           </div>
         </div>
 
@@ -143,8 +148,8 @@ export default function TeacherMyGroups({ onBack }: TeacherMyGroupsProps) {
                       <td className="py-3 px-4 text-gray-900">{student.name}</td>
                       <td className="py-3 px-4 text-gray-600">{student.matricula}</td>
                       <td className="py-3 px-4">
-                        <span className={`font-semibold ${student.grade && student.grade >= 6 ? "text-green-600" : "text-red-600"}`}>
-                          {student.grade ? student.grade.toFixed(1) : "N/A"}
+                        <span className={`font-semibold ${student.grade !== null && student.grade !== undefined && student.grade >= 6 ? "text-green-600" : "text-red-600"}`}>
+                          {student.grade !== null && student.grade !== undefined ? student.grade.toFixed(1) : "N/A"}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -171,6 +176,13 @@ export default function TeacherMyGroups({ onBack }: TeacherMyGroupsProps) {
     <div>
       {/* Header */}
       <div className="mb-8">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold transition mb-4"
+        >
+          <ArrowLeft size={20} />
+          Volver al Panel
+        </button>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Mis Grupos y Alumnos</h2>
         <p className="text-gray-600">Selecciona un grupo para ver sus alumnos y calificaciones</p>
       </div>
@@ -203,7 +215,7 @@ export default function TeacherMyGroups({ onBack }: TeacherMyGroupsProps) {
                 </div>
                 <div>
                   <p className="text-xs text-gray-600 mb-1">Promedio</p>
-                  <p className="text-2xl font-bold text-green-600">{group.avgGrade.toFixed(1)}</p>
+                  <p className="text-2xl font-bold text-green-600">{group.avgGrade !== null && group.avgGrade !== undefined ? group.avgGrade.toFixed(1) : "N/A"}</p>
                 </div>
               </div>
             </button>

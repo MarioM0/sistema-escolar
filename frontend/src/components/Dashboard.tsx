@@ -172,12 +172,20 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         )}
 
         {/* Subviews */}
+
         {currentView === "users" && (
           <ManageUsers
             onBack={() => setCurrentView("home")}
             onUserAdded={() => {
-              fetchAlumnosCount();
-              fetchMaestrosCount();
+              // Actualizar contadores de manera segura sin afectar la sesión
+              console.log("Actualizando contadores después de agregar usuario...");
+              Promise.allSettled([
+                fetchAlumnosCount().catch(err => console.warn("Error al actualizar count alumnos:", err)),
+                fetchMaestrosCount().catch(err => console.warn("Error al actualizar count maestros:", err)),
+                fetchPendingRequestsCount().catch(err => console.warn("Error al actualizar count solicitudes:", err))
+              ]).then(() => {
+                console.log("Contadores actualizados (algunos pueden haber fallado)");
+              });
             }}
           />
         )}
@@ -186,8 +194,15 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             onBack={() => setCurrentView("home")}
             initialTab="requests"
             onUserAdded={() => {
-              fetchAlumnosCount();
-              fetchMaestrosCount();
+              // Actualizar contadores de manera segura sin afectar la sesión
+              console.log("Actualizando contadores después de aprobar solicitud...");
+              Promise.allSettled([
+                fetchAlumnosCount().catch(err => console.warn("Error al actualizar count alumnos:", err)),
+                fetchMaestrosCount().catch(err => console.warn("Error al actualizar count maestros:", err)),
+                fetchPendingRequestsCount().catch(err => console.warn("Error al actualizar count solicitudes:", err))
+              ]).then(() => {
+                console.log("Contadores actualizados (algunos pueden haber fallado)");
+              });
             }}
           />
         )}

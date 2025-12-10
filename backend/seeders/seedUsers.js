@@ -40,4 +40,4 @@ async function seedUsers() {
   }
 }
 
-export default seedUsers;
+seedUsers();   // 👉 FALTA ESTO

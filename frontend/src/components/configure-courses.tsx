@@ -9,29 +9,39 @@ interface ConfigureCoursesProps {
   onBack: () => void
 }
 
+interface Teacher {
+  id: number
+  nombre: string
+  email: string
+  matricula?: string
+}
+
 interface Course {
   id: number
   codigo: string
   nombre: string
-  grupo: string
   descripcion: string
-  maestro_id?: number | null
   maestros?: {
     id: number
     nombre: string
     email: string
     matricula?: string
+    grupo: string
   }[]
   created_at: string
   updated_at: string
 }
 
 interface EditCourse extends Omit<Course, 'maestros'> {
-  maestros: string[]
+  maestros: {
+    grupo: string
+    maestro_id: number
+  }[]
 }
 
 export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
   const [courses, setCourses] = useState<Course[]>([])
+  const [teachers, setTeachers] = useState<Teacher[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -45,17 +55,16 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
   const [newCourse, setNewCourse] = useState<{
     codigo: string;
     nombre: string;
-    grupo: string;
     descripcion: string;
-    maestros: string[];
-    maestro_id: number | null;
+    maestros: {
+      grupo: string;
+      maestro_id: number;
+    }[];
   }>({
     codigo: "",
     nombre: "",
-    grupo: "10A",
     descripcion: "",
     maestros: [],
-    maestro_id: null,
   })
 
   // Fetch courses from API
@@ -73,22 +82,45 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
     }
   }
 
+  // Fetch teachers from API
+  const fetchTeachers = async () => {
+    try {
+      const response = await api.get("/maestros")
+      setTeachers(response.data)
+    } catch (err) {
+      console.error("Error fetching teachers:", err)
+    }
+  }
+
   useEffect(() => {
     fetchCourses()
+    fetchTeachers()
   }, [])
 
   const filteredCourses = courses.filter((course) => {
     const matchSearch =
       course.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchGrupo = !filterGrupo || course.grupo.toLowerCase().includes(filterGrupo.toLowerCase())
+    const matchGrupo = !filterGrupo || course.maestros?.some(maestro =>
+      maestro.grupo.toLowerCase().includes(filterGrupo.toLowerCase())
+    ) || false
     return matchSearch && matchGrupo
   })
 
   // Add course
   const handleAddCourse = async () => {
-    if (!newCourse.codigo || !newCourse.nombre || !newCourse.grupo) {
-      alert("Código, nombre y grupo son obligatorios")
+    if (!newCourse.codigo || !newCourse.nombre) {
+      alert("Código y nombre son obligatorios")
+      return
+    }
+    if (newCourse.maestros.length === 0) {
+      alert("Debe asignar al menos un maestro con su grupo")
+      return
+    }
+    // Validate unique groups
+    const grupos = newCourse.maestros.map(m => m.grupo)
+    if (new Set(grupos).size !== grupos.length) {
+      alert("Los grupos deben ser únicos")
       return
     }
     try {
@@ -98,10 +130,8 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
         nombre: newCourse.nombre,
         descripcion: newCourse.descripcion,
         maestros: newCourse.maestros,
-        grupo: newCourse.grupo,
-        maestro_id: newCourse.maestro_id,
       })
-      setNewCourse({ codigo: "", nombre: "", grupo: "10A", descripcion: "", maestros: [], maestro_id: null })
+      setNewCourse({ codigo: "", nombre: "", descripcion: "", maestros: [] })
       setShowAddForm(false)
       fetchCourses()
     } catch (err) {
@@ -117,21 +147,36 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
     setEditingId(course.id)
     setEditData({
       ...course,
-      maestros: course.maestros?.map(m => m.nombre) || []
+      maestros: course.maestros?.map(m => ({
+        grupo: m.grupo,
+        maestro_id: m.id
+      })) || []
     })
   }
 
   const handleSaveEdit = async () => {
     if (!editData || !editingId) return
+    if (!editData.codigo || !editData.nombre) {
+      alert("Código y nombre son obligatorios")
+      return
+    }
+    if (editData.maestros.length === 0) {
+      alert("Debe asignar al menos un maestro con su grupo")
+      return
+    }
+    // Validate unique groups
+    const grupos = editData.maestros.map(m => m.grupo)
+    if (new Set(grupos).size !== grupos.length) {
+      alert("Los grupos deben ser únicos")
+      return
+    }
     try {
       setSaving(true)
       await api.put(`/materias/${editingId}`, {
         codigo: editData.codigo.toUpperCase(),
         nombre: editData.nombre,
         descripcion: editData.descripcion,
-        maestros: editData.maestros?.filter(m => m && m.trim() !== "") || [],
-        grupo: editData.grupo,
-        maestro_id: editData.maestro_id,
+        maestros: editData.maestros,
       })
       setEditingId(null)
       setEditData(null)
@@ -243,28 +288,6 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
                 disabled={saving}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Grupo</label>
-              <input
-                type="text"
-                value={newCourse.grupo}
-                onChange={(e) => setNewCourse({ ...newCourse, grupo: e.target.value })}
-                placeholder="Ej: 10A"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                disabled={saving}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Maestro Principal (ID)</label>
-              <input
-                type="number"
-                value={newCourse.maestro_id || ""}
-                onChange={(e) => setNewCourse({ ...newCourse, maestro_id: e.target.value ? parseInt(e.target.value) : null })}
-                placeholder="ID del maestro principal"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                disabled={saving}
-              />
-            </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
               <textarea
@@ -276,43 +299,88 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
                 disabled={saving}
               />
             </div>
-            {/* Maestros */}
+            {/* Maestros por grupo */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Maestros</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Maestros por Grupo</label>
               <div className="space-y-2">
-                {newCourse.maestros.map((maestro, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={maestro}
-                      onChange={(e) => {
-                        const newMaestros = [...newCourse.maestros]
-                        newMaestros[idx] = e.target.value
-                        setNewCourse({ ...newCourse, maestros: newMaestros })
-                      }}
-                      placeholder="Nombre del maestro"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      disabled={saving}
-                    />
-                    <button
-                      onClick={() => {
-                        const newMaestros = newCourse.maestros.filter((_, i) => i !== idx)
-                        setNewCourse({ ...newCourse, maestros: newMaestros })
-                      }}
-                      disabled={saving}
-                      className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => setNewCourse({ ...newCourse, maestros: [...newCourse.maestros, ""] })}
-                  disabled={saving}
-                  className="w-full px-4 py-2 border border-dashed border-gray-300 text-gray-600 hover:border-blue-600 hover:text-blue-600 rounded-lg transition"
-                >
-                  + Agregar Maestro
-                </button>
+                {/* Selected teachers with groups */}
+                {newCourse.maestros.map((maestro, idx) => {
+                  const teacher = teachers.find(t => t.id === maestro.maestro_id)
+                  return (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <span className="text-sm">
+                        Grupo: {maestro.grupo} - {teacher ? `${teacher.nombre} ${teacher.matricula ? `(${teacher.matricula})` : ''}` : 'Maestro no encontrado'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const newMaestros = newCourse.maestros.filter((_, i) => i !== idx)
+                          setNewCourse({ ...newCourse, maestros: newMaestros })
+                        }}
+                        disabled={saving}
+                        className="px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs transition"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  )
+                })}
+                {/* Add teacher with group */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Grupo (ej: 10A)"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    disabled={saving}
+                    id="new-group"
+                  />
+                  <select
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    disabled={saving}
+                    id="new-teacher"
+                  >
+                    <option value="">Seleccionar maestro</option>
+                    {teachers.map((teacher) => (
+                      <option key={teacher.id} value={teacher.id}>
+                        {teacher.nombre} {teacher.matricula ? `(${teacher.matricula})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      const groupInput = document.getElementById('new-group') as HTMLInputElement
+                      const teacherSelect = document.getElementById('new-teacher') as HTMLSelectElement
+                      const grupo = groupInput.value.trim()
+                      const maestroId = parseInt(teacherSelect.value)
+
+                      if (!grupo || !maestroId) {
+                        alert("Debe ingresar grupo y seleccionar maestro")
+                        return
+                      }
+
+                      if (newCourse.maestros.some(m => m.grupo === grupo)) {
+                        alert("Este grupo ya está asignado")
+                        return
+                      }
+
+                      if (newCourse.maestros.some(m => m.maestro_id === maestroId)) {
+                        alert("Este maestro ya está asignado a otro grupo")
+                        return
+                      }
+
+                      setNewCourse({
+                        ...newCourse,
+                        maestros: [...newCourse.maestros, { grupo, maestro_id: maestroId }]
+                      })
+
+                      groupInput.value = ""
+                      teacherSelect.value = ""
+                    }}
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition"
+                  >
+                    Agregar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -389,20 +457,6 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   placeholder="Nombre"
                 />
-                <input
-                  type="text"
-                  value={editData.grupo}
-                  onChange={(e) => setEditData({ ...editData, grupo: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Grupo"
-                />
-                <input
-                  type="number"
-                  value={editData.maestro_id || ""}
-                  onChange={(e) => setEditData({ ...editData, maestro_id: e.target.value ? parseInt(e.target.value) : null })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Maestro Principal (ID)"
-                />
                 <textarea
                   value={editData.descripcion}
                   onChange={(e) => setEditData({ ...editData, descripcion: e.target.value })}
@@ -411,39 +465,84 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
                   rows={2}
                 />
 
-                {/* Maestros */}
+                {/* Maestros por grupo */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Maestros</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Maestros por Grupo</label>
                   <div className="space-y-2">
-                    {editData.maestros.map((maestro, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={maestro}
-                          onChange={(e) => {
-                            const newMaestros = [...editData.maestros]
-                            newMaestros[idx] = e.target.value
-                            setEditData({ ...editData, maestros: newMaestros })
-                          }}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                        <button
-                          onClick={() => {
-                            const newMaestros = editData.maestros.filter((_, i) => i !== idx)
-                            setEditData({ ...editData, maestros: newMaestros })
-                          }}
-                          className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setEditData({ ...editData, maestros: [...editData.maestros, ""] })}
-                      className="w-full px-4 py-2 border border-dashed border-gray-300 text-gray-600 hover:border-blue-600 hover:text-blue-600 rounded-lg transition"
-                    >
-                      + Agregar Maestro
-                    </button>
+                    {/* Selected teachers with groups */}
+                    {editData.maestros.map((maestro, idx) => {
+                      const teacher = teachers.find(t => t.id === maestro.maestro_id)
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <span className="text-sm">
+                            Grupo: {maestro.grupo} - {teacher ? `${teacher.nombre} ${teacher.matricula ? `(${teacher.matricula})` : ''}` : 'Maestro no encontrado'}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const newMaestros = editData.maestros.filter((_, i) => i !== idx)
+                              setEditData({ ...editData, maestros: newMaestros })
+                            }}
+                            className="px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs transition"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      )
+                    })}
+                    {/* Add teacher with group */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Grupo (ej: 10A)"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        id="edit-group"
+                      />
+                      <select
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        id="edit-teacher"
+                      >
+                        <option value="">Seleccionar maestro</option>
+                        {teachers.map((teacher) => (
+                          <option key={teacher.id} value={teacher.id}>
+                            {teacher.nombre} {teacher.matricula ? `(${teacher.matricula})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const groupInput = document.getElementById('edit-group') as HTMLInputElement
+                          const teacherSelect = document.getElementById('edit-teacher') as HTMLSelectElement
+                          const grupo = groupInput.value.trim()
+                          const maestroId = parseInt(teacherSelect.value)
+
+                          if (!grupo || !maestroId) {
+                            alert("Debe ingresar grupo y seleccionar maestro")
+                            return
+                          }
+
+                          if (editData.maestros.some(m => m.grupo === grupo)) {
+                            alert("Este grupo ya está asignado")
+                            return
+                          }
+
+                          if (editData.maestros.some(m => m.maestro_id === maestroId)) {
+                            alert("Este maestro ya está asignado a otro grupo")
+                            return
+                          }
+
+                          setEditData({
+                            ...editData,
+                            maestros: [...editData.maestros, { grupo, maestro_id: maestroId }]
+                          })
+
+                          groupInput.value = ""
+                          teacherSelect.value = ""
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                      >
+                        Agregar
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -475,9 +574,13 @@ export default function ConfigureCourses({ onBack }: ConfigureCoursesProps) {
                     </h3>
                     <p className="text-sm text-gray-600">Código: {course.codigo}</p>
                   </div>
-                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-sm font-semibold">
-                    Grado {course.grupo}
-                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {course.maestros?.map((maestro, idx) => (
+                      <span key={idx} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-semibold">
+                        {maestro.grupo}
+                      </span>
+                    )) || <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Sin grupos</span>}
+                  </div>
                 </div>
                 <p className="text-gray-600 mb-4">{course.descripcion}</p>
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">

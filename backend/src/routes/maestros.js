@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Usuario, Materia, Alumno, Calificacion } from "../models/index.js";
+import { Usuario, Materia, Alumno, Calificacion, MateriaMaestro } from "../models/index.js";
 import bcrypt from "bcrypt";
 
 const router = Router();
@@ -103,25 +103,40 @@ router.get("/:id/stats", async (req, res) => {
       return res.status(404).json({ message: "Maestro no encontrado" });
     }
 
-    // Obtener grupos (materias asignadas)
-    const grupos = await Materia.findAll({
-      where: { maestro_id: req.params.id },
-      attributes: ['id', 'codigo', 'nombre', 'grupo']
+    // Obtener grupos (materias asignadas al maestro)
+    const materiaMaestros = await MateriaMaestro.findAll({
+      where: { usuario_id: req.params.id },
+      include: [{
+        model: Materia,
+        as: 'materia',
+        attributes: ['id', 'codigo', 'nombre']
+      }],
+      attributes: ['grupo']
     });
 
     // Obtener estudiantes totales (alumnos en grupos asignados)
-    const gruposIds = grupos.map(g => g.id);
+    const grupos = [...new Set(materiaMaestros.map(mm => mm.grupo))];
     const estudiantesTotales = await Alumno.count({
-      where: { grupo: grupos.map(g => g.grupo) }
+      where: { grupo: grupos }
     });
 
-    // Obtener promedio general de calificaciones
+    // Obtener promedio general de calificaciones (usando la calificación más reciente por alumno)
     const calificaciones = await Calificacion.findAll({
       where: { maestro_id: req.params.id },
-      attributes: ['nota']
+      attributes: ['alumno_id', 'nota'],
+      order: [['alumno_id'], ['fecha_registro', 'DESC']]
     });
-    const notas = calificaciones.map(c => c.nota).filter(n => n !== null);
-    const promedio = notas.length > 0 ? notas.reduce((sum, n) => sum + n, 0) / notas.length : 0;
+
+    // Agrupar por alumno y tomar la calificación más reciente
+    const calificacionesPorAlumno = {};
+    calificaciones.forEach(cal => {
+      if (!calificacionesPorAlumno[cal.alumno_id]) {
+        calificacionesPorAlumno[cal.alumno_id] = cal.nota;
+      }
+    });
+
+    const notas = Object.values(calificacionesPorAlumno).filter(n => n !== null).map(n => parseFloat(n));
+    const promedio = notas.length > 0 ? notas.reduce((sum, n) => sum + n, 0) / notas.length : null;
 
     res.json({
       groups: grupos.length,
@@ -144,10 +159,32 @@ router.get("/:id/groups", async (req, res) => {
       return res.status(404).json({ message: "Maestro no encontrado" });
     }
 
-    const grupos = await Materia.findAll({
-      where: { maestro_id: req.params.id },
-      attributes: ['id', 'codigo', 'nombre', 'grupo']
+    // Get all subject-teacher assignments for the teacher
+    const materiaMaestros = await MateriaMaestro.findAll({
+      where: { usuario_id: req.params.id },
+      include: [{
+        model: Materia,
+        as: 'materia',
+        attributes: ['id', 'codigo', 'nombre']
+      }],
+      attributes: ['grupo']
     });
+
+    // Group by unique group-subject combinations
+    const groupSubjectMap = new Map();
+    materiaMaestros.forEach(mm => {
+      const key = `${mm.grupo}-${mm.materia.id}`;
+      if (!groupSubjectMap.has(key)) {
+        groupSubjectMap.set(key, {
+          id: mm.materia.id,
+          codigo: mm.materia.codigo,
+          nombre: mm.materia.nombre,
+          grupo: mm.grupo
+        });
+      }
+    });
+
+    const grupos = Array.from(groupSubjectMap.values());
 
     const groupsWithStats = await Promise.all(grupos.map(async (grupo) => {
       const estudiantes = await Alumno.count({
@@ -155,17 +192,24 @@ router.get("/:id/groups", async (req, res) => {
       });
 
       const calificaciones = await Calificacion.findAll({
-        where: { maestro_id: req.params.id },
-        include: [{
-          model: Alumno,
-          as: 'alumno',
-          where: { grupo: grupo.grupo },
-          attributes: []
-        }],
-        attributes: ['nota']
+        where: {
+          maestro_id: req.params.id,
+          materia_id: grupo.id
+        },
+        attributes: ['alumno_id', 'nota'],
+        order: [['alumno_id'], ['fecha_registro', 'DESC']]
       });
-      const notas = calificaciones.map(c => c.nota).filter(n => n !== null);
-      const avgGrade = notas.length > 0 ? notas.reduce((sum, n) => sum + n, 0) / notas.length : 0;
+
+      // Agrupar por alumno y tomar la calificación más reciente
+      const calificacionesPorAlumno = {};
+      calificaciones.forEach(cal => {
+        if (!calificacionesPorAlumno[cal.alumno_id]) {
+          calificacionesPorAlumno[cal.alumno_id] = cal.nota;
+        }
+      });
+
+      const notas = Object.values(calificacionesPorAlumno).filter(n => n !== null).map(n => parseFloat(n));
+      const avgGrade = notas.length > 0 ? notas.reduce((sum, n) => sum + n, 0) / notas.length : null;
 
       return {
         id: grupo.id,
@@ -173,7 +217,7 @@ router.get("/:id/groups", async (req, res) => {
         grade: grupo.nombre, // Usando nombre como grado
         subject: grupo.nombre,
         students: estudiantes,
-        avgGrade: Math.round(avgGrade * 100) / 100
+        avgGrade: avgGrade
       };
     }));
 
@@ -194,21 +238,42 @@ router.get("/:id/groups/:groupId/students", async (req, res) => {
       return res.status(404).json({ message: "Maestro no encontrado" });
     }
 
-    const grupo = await Materia.findByPk(req.params.groupId);
-    if (!grupo) {
-      return res.status(404).json({ message: "Grupo no encontrado" });
+    // Find the materia and check if teacher is assigned to it
+    const materia = await Materia.findByPk(req.params.groupId);
+    if (!materia) {
+      return res.status(404).json({ message: "Materia no encontrada" });
+    }
+
+    // Check if teacher is assigned to this subject in any group
+    const materiaMaestro = await MateriaMaestro.findOne({
+      where: {
+        usuario_id: req.params.id,
+        materia_id: req.params.groupId
+      }
+    });
+    if (!materiaMaestro) {
+      return res.status(404).json({ message: "No tienes acceso a este grupo" });
     }
 
     const estudiantes = await Alumno.findAll({
-      where: { grupo: grupo.grupo },
+      where: { grupo: materiaMaestro.grupo },
       attributes: ['id', 'nombre', 'matricula']
     });
 
     const studentsWithGrades = await Promise.all(estudiantes.map(async (estudiante) => {
-      const calificacion = await Calificacion.findOne({
-        where: { alumno_id: estudiante.id, maestro_id: req.params.id },
-        attributes: ['nota']
+      // Get all grades for this student from this teacher, ordered by date (most recent first)
+      const calificaciones = await Calificacion.findAll({
+        where: {
+          alumno_id: estudiante.id,
+          maestro_id: req.params.id,
+          materia_id: req.params.groupId  // Only grades for this specific subject/group
+        },
+        attributes: ['nota'],
+        order: [['fecha_registro', 'DESC']]
       });
+
+      // Take the most recent grade (first in the array)
+      const calificacion = calificaciones.length > 0 ? calificaciones[0] : null;
 
       return {
         id: estudiante.id,
@@ -226,9 +291,9 @@ router.get("/:id/groups/:groupId/students", async (req, res) => {
   }
 });
 
-// GET /maestros/:id/grades - Calificaciones para gestión
+// GET /maestros/:id/grades - Calificaciones actuales para gestión (solo la más reciente por estudiante-materia)
 router.get("/:id/grades", async (req, res) => {
-  const { group } = req.query;
+  const { group, subject } = req.query;
   try {
     const maestro = await Usuario.findOne({
       where: { id: req.params.id, rol: "MAESTRO" }
@@ -237,31 +302,75 @@ router.get("/:id/grades", async (req, res) => {
       return res.status(404).json({ message: "Maestro no encontrado" });
     }
 
-    let whereCondition = { maestro_id: req.params.id };
+    // Get all subject-teacher assignments for the teacher
+    let materiaMaestroWhere = { usuario_id: req.params.id };
     if (group) {
-      whereCondition.alumno_grupo = group; // Asumiendo que hay una relación
+      materiaMaestroWhere.grupo = group;
     }
 
-    const calificaciones = await Calificacion.findAll({
-      where: whereCondition,
+    const materiaMaestros = await MateriaMaestro.findAll({
+      where: materiaMaestroWhere,
       include: [{
-        model: Alumno,
-        as: 'alumno',
-        attributes: ['id', 'nombre', 'matricula', 'grupo']
+        model: Materia,
+        as: 'materia',
+        attributes: ['id', 'codigo', 'nombre'],
+        where: subject ? { nombre: subject } : undefined
       }],
-      attributes: ['id', 'nota', 'fecha_registro']
+      attributes: ['grupo']
     });
 
-    const grades = calificaciones.map(cal => ({
-      id: cal.id,
-      studentId: cal.alumno.id,
-      name: cal.alumno.nombre,
-      matricula: cal.alumno.matricula,
-      group: cal.alumno.grupo,
-      currentGrade: cal.nota,
-      newGrade: cal.nota,
-      status: "guardado"
+    const materias = materiaMaestros.map(mm => ({
+      id: mm.materia.id,
+      codigo: mm.materia.codigo,
+      nombre: mm.materia.nombre,
+      grupo: mm.grupo
     }));
+
+    if (materias.length === 0) {
+      return res.json([]);
+    }
+
+    // Get all students in the groups of these subjects
+    const grupos = [...new Set(materias.map(m => m.grupo))];
+    const alumnos = await Alumno.findAll({
+      where: { grupo: grupos },
+      attributes: ['id', 'nombre', 'matricula', 'grupo']
+    });
+
+    // For each student and each subject they take from this teacher, get the most recent grade or null
+    const grades = [];
+
+    for (const alumno of alumnos) {
+      // Find all subjects this student takes from this teacher (same group)
+      const studentMaterias = materias.filter(m => m.grupo === alumno.grupo);
+
+      for (const materia of studentMaterias) {
+        const calificacion = await Calificacion.findOne({
+          where: {
+            alumno_id: alumno.id,
+            materia_id: materia.id,
+            maestro_id: req.params.id
+          },
+          attributes: ['id', 'nota', 'fecha_registro', 'observaciones'],
+          order: [['fecha_registro', 'DESC']]
+        });
+
+        // Always add the student-subject combination, with grade details if available
+        grades.push({
+          id: calificacion ? calificacion.id.toString() : `${alumno.id}-${materia.id}`,
+          studentId: alumno.id,
+          name: alumno.nombre,
+          matricula: alumno.matricula,
+          group: alumno.grupo,
+          subject: materia.nombre,
+          currentGrade: calificacion ? calificacion.nota : null,
+          newGrade: calificacion ? calificacion.nota : null,
+          fecha_registro: calificacion ? calificacion.fecha_registro : null,
+          observaciones: calificacion ? calificacion.observaciones : null,
+          status: "guardado"
+        });
+      }
+    }
 
     res.json(grades);
   } catch (err) {
@@ -270,7 +379,72 @@ router.get("/:id/grades", async (req, res) => {
   }
 });
 
-// PUT /maestros/:id/grades - Actualizar calificaciones
+// GET /maestros/:id/grades/history - Historial completo de calificaciones
+router.get("/:id/grades/history", async (req, res) => {
+  const { studentId, subject } = req.query;
+  try {
+    const maestro = await Usuario.findOne({
+      where: { id: req.params.id, rol: "MAESTRO" }
+    });
+    if (!maestro) {
+      return res.status(404).json({ message: "Maestro no encontrado" });
+    }
+
+    let whereClause = { maestro_id: req.params.id };
+    if (studentId) whereClause.alumno_id = studentId;
+    if (subject) {
+      // Find materia by name through MateriaMaestro relationship
+      const materiaMaestro = await MateriaMaestro.findOne({
+        where: { usuario_id: req.params.id },
+        include: [{
+          model: Materia,
+          as: 'materia',
+          where: { nombre: subject }
+        }]
+      });
+      if (materiaMaestro) {
+        whereClause.materia_id = materiaMaestro.materia.id;
+      }
+    }
+
+    const calificaciones = await Calificacion.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Alumno,
+          as: 'alumno',
+          attributes: ['id', 'nombre', 'matricula', 'grupo']
+        },
+        {
+          model: Materia,
+          as: 'materia',
+          attributes: ['id', 'nombre', 'codigo']
+        }
+      ],
+      attributes: ['id', 'nota', 'fecha_registro', 'observaciones'],
+      order: [['fecha_registro', 'DESC']]
+    });
+
+    const history = calificaciones.map(cal => ({
+      id: cal.id,
+      studentId: cal.alumno.id,
+      studentName: cal.alumno.nombre,
+      matricula: cal.alumno.matricula,
+      group: cal.alumno.grupo,
+      subject: cal.materia.nombre,
+      grade: cal.nota,
+      fecha_registro: cal.fecha_registro,
+      observaciones: cal.observaciones
+    }));
+
+    res.json(history);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al obtener historial de calificaciones" });
+  }
+});
+
+// PUT /maestros/:id/grades - Actualizar o crear calificaciones (permite múltiples calificaciones)
 router.put("/:id/grades", async (req, res) => {
   const { grades } = req.body;
   try {
@@ -281,28 +455,56 @@ router.put("/:id/grades", async (req, res) => {
       return res.status(404).json({ message: "Maestro no encontrado" });
     }
 
-    const updates = grades.map(async (grade) => {
-      let calificacion = await Calificacion.findOne({
-        where: { alumno_id: grade.studentId, maestro_id: req.params.id }
+    const newGrades = await Promise.all(grades.map(async (grade) => {
+      // Get the student to find their group
+      const alumno = await Alumno.findByPk(grade.studentId);
+      if (!alumno) {
+        throw new Error(`Alumno ${grade.studentId} no encontrado`);
+      }
+
+      // Find the materia-maestro assignment for this subject, group and teacher
+      const materiaMaestro = await MateriaMaestro.findOne({
+        where: { usuario_id: req.params.id, grupo: alumno.grupo },
+        include: [{
+          model: Materia,
+          as: 'materia',
+          where: { nombre: grade.subject }
+        }]
+      });
+      if (!materiaMaestro) {
+        throw new Error(`Materia '${grade.subject}' no encontrada para grupo ${alumno.grupo} y maestro ${req.params.id}`);
+      }
+
+      // Check if there's an existing grade for this student-subject-teacher
+      const existingGrade = await Calificacion.findOne({
+        where: {
+          alumno_id: grade.studentId,
+          materia_id: materiaMaestro.materia.id,
+          maestro_id: req.params.id
+        },
+        order: [['fecha_registro', 'DESC']]
       });
 
-      if (calificacion) {
-        await calificacion.update({ nota: grade.newGrade });
+      if (existingGrade) {
+        // Update existing grade
+        await existingGrade.update({ nota: grade.newGrade });
+        return existingGrade;
       } else {
-        calificacion = await Calificacion.create({
+        // Create new grade entry
+        const calificacion = await Calificacion.create({
           alumno_id: grade.studentId,
+          materia_id: materiaMaestro.materia.id,
           maestro_id: req.params.id,
           nota: grade.newGrade
         });
+        return calificacion;
       }
-      return calificacion;
-    });
+    }));
 
-    await Promise.all(updates);
-    res.json({ message: "Calificaciones actualizadas" });
+    res.json({ message: "Calificaciones guardadas", grades: newGrades });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error al actualizar calificaciones" });
+    res.status(500).json({ message: "Error al guardar calificaciones" });
   }
 });
 

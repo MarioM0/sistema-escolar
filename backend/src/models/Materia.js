@@ -1,5 +1,6 @@
+
 import { DataTypes } from "sequelize";
-import { sequelize } from "../db.js";
+import { sequelize } from "./sequelize.js";
 
 export const Materia = sequelize.define("Materia", {
   id: {
@@ -19,19 +20,6 @@ export const Materia = sequelize.define("Materia", {
   descripcion: {
     type: DataTypes.TEXT,
     allowNull: true,
-  },
-  grupo: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  maestro_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'usuarios',
-      key: 'id'
-    }
   },
 }, {
   tableName: "materias",
