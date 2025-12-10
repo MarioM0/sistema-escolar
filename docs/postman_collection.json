@@ -1,0 +1,34 @@
+{
+  "info": {
+    "_postman_id": "sistema-escolar-sample",
+    "name": "Sistema Escolar - Colección Mínima",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{ \"email\": \"admin@example.com\", \"password\": \"secret\" }" },
+        "url": { "raw": "http://localhost:3000/api/auth/login", "host": ["http://localhost:3000"], "path": ["api","auth","login"] }
+      }
+    },
+    {
+      "name": "Control Escolar - Reporte",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:3000/api/control_escolar/reporte", "host": ["http://localhost:3000"], "path": ["api","control_escolar","reporte"] }
+      }
+    },
+    {
+      "name": "Control Escolar - Borrar Calificación",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "http://localhost:3000/api/control_escolar/calificaciones/:id", "host": ["http://localhost:3000"], "path": ["api","control_escolar","calificaciones",":id"] }
+      }
+    }
+  ]
+}

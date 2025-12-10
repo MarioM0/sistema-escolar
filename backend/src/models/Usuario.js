@@ -13,5 +13,5 @@ export const Usuario = sequelize.define('Usuario', {
   matricula: { type: DataTypes.STRING, allowNull: true }, // Para maestros
 }, {
   tableName: 'usuarios',
-  timestamps: false,
+  timestamps: true,
 });
