@@ -72,22 +72,9 @@ DB_PORT=5432
 JWT_SECRET=tu-jwt-secret-super-seguro-2024
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
-RUN_SEEDERS=true
 ```
 
-**Ejecutar migraciones:**
-
-```bash
-npx sequelize-cli db:migrate
-```
-
-**Ejecutar seeders (datos iniciales):**
-
-```bash
-npm run seed
-```
-
-**Iniciar servidor:**
+**Iniciar servidor (sincroniza tablas y seeders automáticamente):**
 
 ```bash
 npm run dev
@@ -120,13 +107,19 @@ Esto levantará:
 - **Backend** (puerto 3000)
 - **Frontend** (puerto 5173)
 
+**Los seeders se ejecutan automáticamente** en el primer inicio, poblando la base de datos con:
+- 1 usuario Admin (CONTROL_ESCOLAR)
+- 2 usuarios Maestro
+- 6 Materias
+- 6 Alumnos
+
 **Esperar a que se complete la inicialización:**
 
 ```bash
-docker-compose logs -f
+docker-compose logs -f backend_sge
 ```
 
-Cuando veas `✅ Tablas sincronizadas correctamente`, todo está listo.
+Cuando veas `Servidor corriendo en puerto 3000`, todo está listo.
 
 **Para detener los servicios:**
 
@@ -134,11 +127,17 @@ Cuando veas `✅ Tablas sincronizadas correctamente`, todo está listo.
 docker-compose down
 ```
 
+Para una limpieza completa (incluyendo volúmenes):
+
+```bash
+docker-compose down --volumes
+```
+
 ---
 
 ## 🔐 Credenciales por defecto
 
-Después de ejecutar los seeders, puedes usar estas credenciales:
+Las credenciales se crean automáticamente en el primer inicio:
 
 | Rol | Email | Contraseña |
 |-----|-------|-----------|

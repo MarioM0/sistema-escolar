@@ -13,12 +13,13 @@ RUN npm install
 # Copiar el resto del código
 COPY . .
 
-# Hacer ejecutable el script wait-for
+# Hacer ejecutables los scripts
 COPY wait-for.sh /wait-for.sh
-RUN chmod +x /wait-for.sh
+COPY init-db.sh /init-db.sh
+RUN chmod +x /wait-for.sh /init-db.sh
 
 # Exponer el puerto del backend
 EXPOSE 3000
 
-# Comando de inicio con wait-for
-CMD ["sh", "/wait-for.sh", "postgres", "npm", "run", "dev"]
+# Comando de inicio con inicialización
+CMD ["/init-db.sh"]
