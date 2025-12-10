@@ -24,8 +24,8 @@ async function seedUsers() {
     for (const u of users) {
       const password_hash = await bcrypt.hash(u.password, saltRounds);
       await pool.query(
-        `INSERT INTO usuarios (nombre, email, password_hash, rol, matricula)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO usuarios (nombre, email, password_hash, rol, matricula, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
          ON CONFLICT (email) DO NOTHING`,
         [u.nombre, u.email, password_hash, u.rol, u.matricula || null]
       );

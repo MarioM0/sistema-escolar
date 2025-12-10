@@ -8,6 +8,7 @@ import solicitudesRoutes from './routes/solicitudes.js';
 import solicitudesRegistroMaestroRoutes from './routes/solicitudes-registro-maestro.js';
 import calificacionesRoutes from './routes/calificaciones.js';
 import maestrosRoutes from './routes/maestros.js';
+import maestroRoutes from './routes/maestro.js';
 import controlEscolarRoutes from './routes/control_escolar.js';
 import materiasRoutes from './routes/materias.js';
 
@@ -32,6 +33,7 @@ app.use('/api/solicitudes', solicitudesRoutes);
 app.use('/api/solicitudes-registro-maestro', solicitudesRegistroMaestroRoutes);
 app.use('/api/calificaciones', calificacionesRoutes);
 app.use('/api/maestros', maestrosRoutes);
+app.use('/api/maestro', maestroRoutes);
 app.use('/api/control_escolar', controlEscolarRoutes);
 app.use('/api/materias', materiasRoutes);
 
@@ -44,3 +46,4 @@ app.get('/api/health', (req, res) => {
 app.get('/', (req, res) => res.send('Backend corriendo correctamente'));
 
 export default app;
+

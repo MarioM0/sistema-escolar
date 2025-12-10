@@ -23,6 +23,17 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [alumnosCount, setAlumnosCount] = useState(0);
   const [maestrosCount, setMaestrosCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [promedioGeneral, setPromedioGeneral] = useState<number | null>(null);
+  // Función para obtener el promedio general de calificaciones
+  const fetchPromedioGeneral = async () => {
+    try {
+      const response = await api.get("/calificaciones/promedio-general");
+      setPromedioGeneral(response.data.promedio);
+    } catch (error) {
+      console.error("Error al obtener el promedio general:", error);
+      setPromedioGeneral(null);
+    }
+  };
 
   // Función para actualizar conteo de alumnos
   const fetchAlumnosCount = async () => {
@@ -59,6 +70,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       fetchAlumnosCount();
       fetchMaestrosCount();
       fetchPendingRequestsCount();
+      fetchPromedioGeneral();
     }
   }, [currentView]);
 
@@ -126,7 +138,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   <h3 className="text-sm font-medium text-muted-foreground">Calificaciones</h3>
                   <BarChart3 className="w-5 h-5 text-green-600" />
                 </div>
-                <p className="text-3xl font-bold text-foreground">8.5</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {promedioGeneral !== null ? promedioGeneral.toFixed(2) : "-"}
+                </p>
                 <p className="text-xs text-muted-foreground mt-2">Promedio general</p>
               </div>
 

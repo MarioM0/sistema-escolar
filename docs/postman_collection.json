@@ -1,34 +1,583 @@
 {
   "info": {
-    "_postman_id": "sistema-escolar-sample",
-    "name": "Sistema Escolar - Colección Mínima",
+    "_postman_id": "sistema-escolar-complete",
+    "name": "Sistema de Gestión de Calificaciones Escolares",
+    "description": "Colección completa de endpoints para el sistema escolar",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Auth - Login",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
-        "body": { "mode": "raw", "raw": "{ \"email\": \"admin@example.com\", \"password\": \"secret\" }" },
-        "url": { "raw": "http://localhost:3000/api/auth/login", "host": ["http://localhost:3000"], "path": ["api","auth","login"] }
-      }
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@colegio.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - Maestro 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@colegio.com\",\n  \"password\": \"prof123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - Maestro 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ana@colegio.com\",\n  \"password\": \"prof456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        }
+      ]
     },
     {
-      "name": "Control Escolar - Reporte",
-      "request": {
-        "method": "GET",
-        "url": { "raw": "http://localhost:3000/api/control_escolar/reporte", "host": ["http://localhost:3000"], "path": ["api","control_escolar","reporte"] }
-      }
+      "name": "Maestro Routes",
+      "item": [
+        {
+          "name": "Get My Students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/maestro/alumnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "maestro",
+                "alumnos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Grades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/maestro/calificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "maestro",
+                "calificaciones"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register Grade",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alumno_id\": 1,\n  \"materia_id\": 1,\n  \"nota\": 8.5,\n  \"observaciones\": \"Buen desempeño en la evaluación\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/maestro/calificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "maestro",
+                "calificaciones"
+              ]
+            }
+          }
+        }
+      ]
     },
     {
-      "name": "Control Escolar - Borrar Calificación",
-      "request": {
-        "method": "DELETE",
-        "url": { "raw": "http://localhost:3000/api/control_escolar/calificaciones/:id", "host": ["http://localhost:3000"], "path": ["api","control_escolar","calificaciones",":id"] }
-      }
+      "name": "Control Escolar Routes",
+      "item": [
+        {
+          "name": "Get Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/control_escolar/reporte",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "control_escolar",
+                "reporte"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Grade",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/control_escolar/calificaciones/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "control_escolar",
+                "calificaciones",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calificaciones Routes",
+      "item": [
+        {
+          "name": "Get General Average",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calificaciones/promedio-general",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calificaciones",
+                "promedio-general"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Student Grades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calificaciones/alumno/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calificaciones",
+                "alumno",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students Routes",
+      "item": [
+        {
+          "name": "Get All Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/alumnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "alumnos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Student by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/alumnos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "alumnos",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pedro García\",\n  \"email\": \"pedro@colegio.com\",\n  \"matricula\": \"2024003\",\n  \"grupo\": \"6B\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/alumnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "alumnos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Student",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pedro García Actualizado\",\n  \"grupo\": \"6C\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/alumnos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "alumnos",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Student",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/alumnos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "alumnos",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Students Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/alumnos/count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "alumnos",
+                "count"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Materias Routes",
+      "item": [
+        {
+          "name": "Get All Subjects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/materias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "materias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Subject by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/materias/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "materias",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Subject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"CIEN101\",\n  \"nombre\": \"Ciencias Naturales\",\n  \"descripcion\": \"Estudio de fenómenos naturales\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/materias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "materias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Subject",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ciencias Actualizadas\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/materias/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "materias",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Subject",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/materias/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "materias",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
     }
   ]
 }

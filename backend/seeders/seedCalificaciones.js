@@ -54,8 +54,8 @@ async function seedCalificaciones() {
     // Insert the grades
     for (const calif of calificaciones) {
       await pool.query(
-        `INSERT INTO calificaciones (alumno_id, materia_id, maestro_id, nota, fecha_registro)
-         VALUES ($1, $2, $3, $4, NOW())
+        `INSERT INTO calificaciones (alumno_id, materia_id, maestro_id, nota, fecha_registro, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
          ON CONFLICT DO NOTHING`,
         [calif.alumno_id, calif.materia_id, calif.maestro_id, calif.nota]
       );
@@ -69,4 +69,4 @@ async function seedCalificaciones() {
   }
 }
 
-export default seedCalificaciones;
+seedCalificaciones();

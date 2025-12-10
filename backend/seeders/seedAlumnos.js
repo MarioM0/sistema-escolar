@@ -1,4 +1,3 @@
-import bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -14,19 +13,22 @@ const pool = new Pool({
 async function seedAlumnos() {
   try {
     const alumnos = [
-      { nombre: 'Pedro', email: 'pedro@colegio.com', matricula: 'ALU001', grupo: '1A', fecha_nacimiento: '2010-05-12' },
-      { nombre: 'María', email: 'maria@colegio.com', matricula: 'ALU002', grupo: '1A', fecha_nacimiento: '2010-07-20' },
-      { nombre: 'Luis', email: 'luis@colegio.com', matricula: 'ALU003', grupo: '1B', fecha_nacimiento: '2010-03-18' },
+      { nombre: 'Pedro García', matricula: 'ALU001', email: 'pedro@colegio.com', grupo: '1A' },
+      { nombre: 'María López', matricula: 'ALU002', email: 'maria@colegio.com', grupo: '1A' },
+      { nombre: 'Luis Martínez', matricula: 'ALU003', email: 'luis@colegio.com', grupo: '1B' },
+      { nombre: 'Ana Rodríguez', matricula: 'ALU004', email: 'ana.est@colegio.com', grupo: '1B' },
+      { nombre: 'Carlos Fernández', matricula: 'ALU005', email: 'carlos@colegio.com', grupo: '1C' },
+      { nombre: 'Sofia Díaz', matricula: 'ALU006', email: 'sofia@colegio.com', grupo: '1C' },
     ];
 
     for (const a of alumnos) {
       await pool.query(
-        `INSERT INTO alumnos (nombre, email, matricula, grupo, fecha_nacimiento)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO alumnos (nombre, matricula, email, grupo, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
          ON CONFLICT (email) DO NOTHING`,
-        [a.nombre, a.email, a.matricula, a.grupo, a.fecha_nacimiento]
+        [a.nombre, a.matricula, a.email, a.grupo]
       );
-      console.log(`Alumno insertado: ${a.email}`);
+      console.log(`Alumno insertado: ${a.nombre} - ${a.matricula}`);
     }
 
     console.log('Seed de alumnos completado ✅');
@@ -37,4 +39,4 @@ async function seedAlumnos() {
   }
 }
 
-export default seedAlumnos;
+seedAlumnos();
